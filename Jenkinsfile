@@ -1,22 +1,19 @@
 pipeline {
     agent {
         docker {
-            image 'docker:24-dind'                      
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
+            image 'docker:24-dind'                 // Docker-in-Docker image
+            args '-v /var/run/docker.sock:/var/run/docker.sock'  // optional if using host socket
         }
     }
 
     environment {
-        IMAGE_NAME = "umeshsarki123/my-app"             
-        IMAGE_TAG  = "${BUILD_NUMBER}"                  
-        DOCKER_USER = credentials('docker-username')   
-        DOCKER_PASS = credentials('docker-password')  
+        IMAGE_NAME = "my-app"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                echo "Checking out code from GitHub..."
                 checkout scm
             }
         }
@@ -28,23 +25,20 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Run Docker Image') {
             steps {
-                echo "Logging in to Docker Hub..."
-                sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                
-                echo "Pushing Docker image: ${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                echo "Running Docker container from image..."
+                sh "docker run --rm ${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline completed successfully! Docker image pushed: ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "Pipeline completed successfully!"
         }
         failure {
-            echo "Pipeline failed. Check the logs above for errors."
+            echo "Pipeline failed. Check logs above."
         }
     }
 }
